@@ -1,0 +1,68 @@
+---
+title: "HW7 markdown"
+output: html_document
+---
+
+Setup includes clearing the environment, setting the seed to 1, and saving data set to variable 'dat'
+
+```{r}
+library(rpart)
+rm(list = ls())
+set.seed(1)
+dat <- read.table('uscrime.txt', stringsAsFactors=FALSE, header=TRUE)
+```
+
+Head of dat
+```{r}
+head(dat)
+```
+
+Problem 10.1
+Using the same crime data set uscrime.txt as in Questions 8.2 and 9.1, find the best model you can using
+a regression tree model
+```{r}
+formula <- Crime~M + So + Ed + Po1 + Po2 + LF + M.F + Pop + NW + U1 + U2 + Wealth + Ineq + Prob + Time
+m1 <- rpart(formula, method="anova", data=dat)
+
+printcp(m1) # display the results
+
+post(m1, file = "", 
+   title = "Regression Tree for USCrimes ")
+```
+
+The regression tree using rpart splits the uscrimes data set into four sub sets using the factors P01, Pop and NW. 
+The modeling is predicting the crimes to be 550.5 (far left) with conditions of Po1 is less than 7.65 and Pop less than 22.5 and 799.55 when Pop is greater than 22.5
+
+From the plotted tree we can derive the rest of the model prediction for the different branches of conditions.
+
+```{r}
+library(randomForest)
+fit <- randomForest(formula,data=dat)
+print(fit) # view results 
+importance(fit) # importance of each predictor
+```
+
+When using a random forest model random forest gives most importance to Po1.
+
+Problem 10.2
+Describe a situation or problem from your job, everyday life, current events, etc., for which a logistic regression model would be appropriate. List some (up to 5) predictors that you might use.
+
+I think logistic regression can help with answering the question whether a new driver will have one or more car accidents within the first year of driving.
+Some of the predictors I'll use are
+- Age of new driver
+- Driving Education 
+- Hours of Driving practice
+- Family members with driving experience
+- Expected mileage of commuting for the year
+
+
+Problem 10.3.1
+Using the GermanCredit data set germancredit.txt from http://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german / (description at http://archive.ics.uci.edu/ml/datasets/Statlog+%28German+Credit+Data%29 ), use logistic regression to find a good predictive model for whether credit applicants are good credit risks or not. Show your model (factors used and their coefficients), the software output, and the quality of fit. You can use the glm function in R. To get a logistic regression (logit) model on data where the response is either zero or one, use family=binomial(link=”logit”) in your glm function call.
+```{r}
+germanCredit <- read.table('germancredit.txt', stringsAsFactors=FALSE, header=FALSE)
+head(germanCredit)
+```
+
+Problem 10.3.2
+Because the model gives a result between 0 and 1, it requires setting a threshold probability to separate between “good” and “bad” answers. In this data set, they estimate that incorrectly identifying a bad customer as good, is 5 times worse than incorrectly classifying a good customer as bad. Determine a good threshold probability based on your model.
+

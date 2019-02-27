@@ -1,0 +1,33 @@
+---
+title: "Homework 1"
+output: html_notebook
+---
+setup
+```{r}
+library(kernlab)
+set.seed(42)
+```
+
+
+Q 2.1
+Describe a situation or problem from your job, everyday life, current events, etc., for which a classification model would be appropriate. List some (up to 5) predictors that you might use.
+
+As a NFL fan, I often find myself thinking about my team's chances of making to the playoff. I think the classification model would be appropriate in using it to classify NFL teams as playoff contenders or not by midway through the season by looking at a few predictors gathered by midseason. The model will use previous 3 full season's predictors to determine a classifier.
+
+The predictors I'd use to create the classifier would be
+ - Touchdowns per game (This will indicate offensive scoring ability of a team)
+ - Average wins for opponents in division (How competive is the opponents in the division)
+ - Quarterback Rating (How good is the passer of team)
+ - Rushing Yards per game (How good are the runners of the team)
+ - Wins recorded by mid-season (More likely to be in playoff if they have a winning records by mid season)
+ 
+
+
+Q 2.2
+
+```{r}
+CCdata <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header=FALSE)
+head(CCdata)
+```
+
+

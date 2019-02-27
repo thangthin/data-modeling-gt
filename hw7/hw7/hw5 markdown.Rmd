@@ -1,0 +1,119 @@
+---
+title: "hw5 markdown"
+output: html_document
+---
+
+Setup includes clearing the environment, setting the seed to 1, and saving data set to variable 'dat'
+
+```{r}
+rm(list = ls())
+set.seed(1)
+dat <- read.table('uscrime.txt', stringsAsFactors=FALSE, header=TRUE)
+```
+
+Head of dat
+```{r}
+head(dat)
+```
+
+We use the entire dataset to build a regression model which is then used for prediction
+We're not choosing between models (so validation isn't needed)
+and we're not bothering to estimate model quality (so test data isn't needed)
+
+summary of model
+```{r}
+model <- lm( Crime ~ ., data = dat)
+summary(model)
+```
+
+Test datapoint
+```{r}
+test <-data.frame(M = 14.0,So = 0, Ed = 10.0, Po1 = 12.0, Po2 = 15.5,LF = 0.640, M.F = 94.0, Pop = 150, NW = 1.1, U1 = 0.120, U2 = 3.6, Wealth = 3200, Ineq = 20.1, Prob = 0.040,Time = 39.0)
+
+pred_model <- predict(model, test)
+pred_model
+```
+
+
+Let's go back and just use the singificant factors to get an estimate.
+We'll try using all of the factors with p<=0.1.
+(In Module 11, we'll see better ways of going about this.)
+
+```{r}
+model2 <- lm( Crime ~  M + Ed + Po1 + U2 + Ineq + Prob, data = dat)
+summary(model2)
+```
+
+Predict on our test observation
+```{r}
+pred_model2 <- predict(model2, test)
+pred_model2
+```
+
+Model quality
+```{r}
+# Install the DAAG package, which has cross-validation functions
+
+#install.packages("DAAG")
+library(DAAG)
+
+c <- cv.lm(dat,model2,m=5) # note that here, "m" is used for the number of folds, rather than the usual "k"
+c
+```
+
+The overall mean squared prediction error in cross-validation is shown as "ms".
+NOTE that there seems to be a typo in cv.lm -- 
+when it says "sum over all n folds", n is actually the number
+of data points in the last fold, not the number of folds.
+
+We can calculate the R-squared values directly.
+R-squared = 1 - SSEresiduals/SSEtotal
+total sum of squared differences between data and its mean
+
+```{r}
+SStot <- sum((dat$Crime - mean(dat$Crime))^2)
+```
+
+```{r}
+# for model, model2, and cross-validation, calculated SEres
+
+SSres_model <- sum(model$residuals^2)
+
+SSres_model2 <- sum(model2$residuals^2)
+
+SSres_c <- attr(c,"ms")*nrow(dat) # mean squared error, times number of data points, gives sum of squared errors
+
+# Calculate R-squareds for model, model2, cross-validation
+
+1 - SSres_model/SStot # initial model with insignificant factors
+
+## 0.803
+
+1 - SSres_model2/SStot # model2 without insignificant factors
+
+## 0.766
+
+1 - SSres_c/SStot # cross-validated
+
+## 0.638
+
+# So, this shows that including the insignificant factors overfits compared to removing them,
+# and even the fitted model is probably overfitted.
+# That's not so surprising, since we started with just 47 data points and we have 15 factors to predict from.
+# The ratio of data points to factors is about 3:1, 
+# and it's usually good to have 10:1 or more.
+#
+# We'll see in Module 11 ways we can try to get around this problem.
+
+# We can also try cross-validation on the first, 15-factor model
+
+cfirst <- cv.lm(dat,model,m=5)
+
+SSres_cfirst <- attr(cfirst,"ms")*nrow(dat) # mean squared error, times number of data points, gives sum of squared errors
+
+1 - SSres_cfirst/SStot # cross-validated
+
+## 0.413
+
+# That's a huge difference from the 0.803 reported by lm() on the training data, which demonstrates the need to validate!
+```
