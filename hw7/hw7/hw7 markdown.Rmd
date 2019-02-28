@@ -31,7 +31,7 @@ post(m1, file = "",
 ```
 
 The regression tree using rpart splits the uscrimes data set into four sub sets using the factors P01, Pop and NW. 
-The modeling is predicting the crimes to be 550.5 (far left) with conditions of Po1 is less than 7.65 and Pop less than 22.5 and 799.55 when Pop is greater than 22.5
+The modeling is predicting the crimes to be 550.5 (far left) Po1 is less than 7.65 and Pop is less than 22.5. Similarly, it predict crime amount to be 799.55 when Pop is greater than 22.5.
 
 From the plotted tree we can derive the rest of the model prediction for the different branches of conditions.
 
@@ -42,7 +42,7 @@ print(fit) # view results
 importance(fit) # importance of each predictor
 ```
 
-When using a random forest model random forest gives most importance to Po1.
+When using a random forest model, random forest gives most importance to Po1.
 
 Problem 10.2
 Describe a situation or problem from your job, everyday life, current events, etc., for which a logistic regression model would be appropriate. List some (up to 5) predictors that you might use.
@@ -61,8 +61,56 @@ Using the GermanCredit data set germancredit.txt from http://archive.ics.uci.edu
 ```{r}
 germanCredit <- read.table('germancredit.txt', stringsAsFactors=FALSE, header=FALSE)
 head(germanCredit)
+## Adding headers
+colnames(germanCredit) <- c("CheckingAccountStatus","DurationMonths","CreditHistory",
+                            "Purpose","CreditAmount","SavingAccountBonds","PresentEmploymentSince",
+                            "InstallmentRatePercentageOfDisposableIncome","PersonalStatusAndSex",
+                            "OtherDebtorsGurantors","PresentResidenceSince","Property",
+                            "AgeInYears","InstallmentPlans","Housing","ExistingCreditsAtBank",
+                            "Job","Dependents","Telephone","ForeignWorker","CreditClassification")
+
+## Changing CreditClassification from 1-2 (Good-Bad) to 0-1(Good-Bad)
+germanCredit$CreditClassification[germanCredit$CreditClassification == 1] <- 0
+germanCredit$CreditClassification[germanCredit$CreditClassification == 2] <- 1
+head(germanCredit)
+
+## splitting data
+train <- germanCredit[1:500,]
+test <- germanCredit[501:1000,]
+formula2 <- CreditClassification ~ CheckingAccountStatus + DurationMonths + CreditHistory +Purpose + CreditAmount + SavingAccountBonds + PresentEmploymentSince + InstallmentRatePercentageOfDisposableIncome + PersonalStatusAndSex + OtherDebtorsGurantors + PresentResidenceSince + Property + AgeInYears + InstallmentPlans + Housing + ExistingCreditsAtBank + Job + Dependents + Telephone + ForeignWorker
+
+logRegModel <- glm(formula=formula2, family=binomial(link="logit"), data=germanCredit)
+summary(logRegModel)
 ```
+It appears that InstallmentRatePercentageOfDisposableIncome, SavingAccountBondsA65 (no saving account), PurposeA43 (radio/television), PurposeA41 (used car), CheckingAccountStatusA14 (No Checking account) are statistically significant with not having checking account having the lowest p-value suggesting an association of not having checking account to credit classification.
+```{r}
+anova(logRegModel, test="Chisq")
+
+library(pscl)
+pR2(logRegModel)
+```
+
 
 Problem 10.3.2
 Because the model gives a result between 0 and 1, it requires setting a threshold probability to separate between “good” and “bad” answers. In this data set, they estimate that incorrectly identifying a bad customer as good, is 5 times worse than incorrectly classifying a good customer as bad. Determine a good threshold probability based on your model.
 
+A good threshold would be 0.1. If .5 is both classification are evenly costly. Using that threshold, it appears the model will only be 0.564 accurate.
+```{r}
+fitted.results <- predict(logRegModel,newdata=subset(test,select=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)),type='response')
+fitted.results <- ifelse(fitted.results > 0.1,1,0)
+misClasificError <- mean(fitted.results != test$CreditClassification)
+print(paste('Accuracy',1-misClasificError))
+
+library(ROCR)
+p <- predict(logRegModel, newdata=subset(test,select=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)), type="response")
+pr <- prediction(p, test$CreditClassification)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+```
+
+
+Code Inspiration Source - https://datascienceplus.com/perform-logistic-regression-in-r/
